@@ -13,8 +13,10 @@
     :target: https://pypi.python.org/pypi/m_pool
 
 
-A Wrapper For Numpy Arrays Providing Named Axes, Interpolation, Iteration, Disk Persistence And Numerical Calcs
-===============================================================================================================
+A Wrapper For Numpy Arrays
+==========================
+
+Provides Named Axes, Interpolation, Iteration, Disk Persistence And Numerical Calcs
 
 
 See the Code at: `<https://github.com/sonofeft/M_Pool>`_
