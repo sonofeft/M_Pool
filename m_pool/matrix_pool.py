@@ -192,6 +192,7 @@ class MatrixPool(object):
     def read_from_pickle(self, fname=None):
         if fname==None:
             fname = '%s_matrix.pool'%(self.name)
+            print 'Reading:', fname
             
         if os.path.exists(fname):            
             
@@ -211,7 +212,8 @@ class MatrixPool(object):
             for MD in D['matrixL']:
                 #print 'add Matrix',MD
                 self.add_matrix( **MD )
-        
+        else:
+            print '...WARNING... could not find:',fname
 
 if __name__=="__main__":
 

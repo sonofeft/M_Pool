@@ -45,7 +45,7 @@ class Matrix(object):
         shape = [len(A) for A in self.axisL]
             
         # Init to Zeros if axes specified, but data not specified
-        if self.matValArr==None and shape:
+        if self.matValArr is None and shape:
             self.matValArr = np.zeros( shape )
             
         self.axisPoolObj.connectMatrixToAxes(self, self.axisNameL)
@@ -180,7 +180,7 @@ class Matrix(object):
                 result = m[0] # assume out of bounds at low end
         
         #print 'type(result)=',type(result), result.shape
-        return result
+        #return result
         return  float( result )
         
         

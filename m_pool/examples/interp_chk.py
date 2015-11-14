@@ -10,7 +10,6 @@ for A in [epsAxis, pcAxis, mrAxis]:
     MP.add_axis( A )
 
 def chkfunc(pc, eps, mr):
-    #return eps + 2.0*pc + 0.1*mr 
     return log10(eps)**2 + 2.0*log10(pc)**2 + 0.1*mr 
 
 M = MP.add_matrix( name='cea_isp', units='sec', axisNameL=['eps','pc','mr'] )
@@ -19,6 +18,8 @@ for eps in epsAxis:
         for mr in mrAxis:
             val = chkfunc(pc, eps, mr)
             M.setByName( pc=pc, eps=eps, mr=mr, val=val )
+            
+MP.save_to_pickle()  # Saves to "CHECK_matrix.pool"
 
 D = {'pc':250., 'eps':35.0, 'mr':1.5}
 #val = M.interp(order=2, **{'pc':250., 'eps':35.0, 'mr':1.5})
