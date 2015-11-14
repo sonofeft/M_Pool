@@ -3,7 +3,11 @@ import itertools
 import copy
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.optimize import minimize
+try:
+    from scipy.optimize import minimize
+except:
+    print "...WARNING... scipy.optimize.minimize did NOT import..."
+    print "   ... min/max functions are UNAVAILABLE ..."
 
 from axis_obj import Axis
 from axis_pool import AxisPool, axis_obj_dammit
