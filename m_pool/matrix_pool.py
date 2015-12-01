@@ -158,7 +158,7 @@ class MatrixPool(object):
         if fname==None:
             fname = '%s_mpool.h5'%(self.name)
             
-        h5file = tables.openFile(fname, mode='a')
+        h5file = tables.openFile(fname, mode='w')
         h5file.createArray("/", 'axes_name_list', [A.name for A in self.axisPoolObj], "String array")
         h5file.createArray("/", 'matrix_name_list', [M.name for M in self.matrixL], "String array")
         axes_group = h5file.createGroup("/", 'axes', 'All the Axes used in Matrix Pool')
@@ -174,6 +174,15 @@ class MatrixPool(object):
             #d.transform_desc = A.transform
             #d.roundDigits_desc = A.roundDigits
             #d.units_desc = A.units
+        
+        # Just use last axis "A" for atom creation
+        atom = tables.Atom.from_dtype(A.valueArr.dtype)
+        filters = tables.Filters(complib='blosc', complevel=5)    
+        
+        for M in self.matrixL:    
+            ds = h5file.createCArray(mat_group, M.name, atom, M.matValArr.shape, filters=filters)
+            ds[:] = M.matValArr
+            
             
         h5file.close()
         
