@@ -181,11 +181,55 @@ class MatrixPool(object):
         
         for M in self.matrixL:    
             ds = h5file.createCArray(mat_group, M.name, atom, M.matValArr.shape, filters=filters)
+            ds.attrs.units = M.units
             ds[:] = M.matValArr
+                
+            h5file.createArray(mat_group, M.name+'_axis_list', [aname for aname in M.axisNameL], "String array")
             
             
         h5file.close()
-        
+    
+    def read_from_hdf5(self, fname=None):
+        if fname==None:
+            fname = '%s_mpool.h5'%(self.name)
+            print 'Reading:', fname
+            
+        if os.path.exists(fname):            
+            h5file = tables.openFile(fname, mode='r')
+               
+            # reinit self
+            self.axisPoolObj = AxisPool()
+            self.matrixL = [] # list of Matrix objects
+            self.matrixD = {} # cross ref by name
+            self.descD = None
+            
+            root = h5file.root
+            
+            # First get the axes 
+            axis_nameL = [_ for _ in root.axes_name_list]
+            print 'axis_nameL =',axis_nameL
+
+            for aname in axis_nameL:
+                val_arr = getattr( root.axes, aname ).read()
+                dname = 'desc_' + aname
+                desc = getattr( root.axes, dname ).read()
+                units, trans, alen = desc
+                
+                A = Axis({'name':aname, 'valueL':val_arr, 'units':units, 'transform':trans})
+                self.add_axis( A )
+            
+            # Then get the matrices
+            matrix_nameL = [_ for _ in root.matrix_name_list]
+            print 'matrix_nameL =',matrix_nameL
+
+            for mname in matrix_nameL:
+                m = getattr( root.matrices, mname ).read()
+                units = getattr( root.matrices, mname ).attrs.units
+                a_list = getattr( root.matrices, mname+'_axis_list' ).read()
+                self.add_matrix( name=mname, units=units, axisNameL=list(a_list), matValArr=m )
+            
+            h5file.close()
+
     def save_to_pickle(self, fname=None):
         if fname==None:
             fname = '%s_matrix.pool'%(self.name)
@@ -208,6 +252,11 @@ class MatrixPool(object):
             fInp = open(fname, 'rb')
             D = pickle.load( fInp )
             fInp.close()
+            
+            # reinit self
+            self.axisPoolObj = AxisPool()
+            self.matrixL = [] # list of Matrix objects
+            self.matrixD = {} # cross ref by name
             
             self.descD = D.get('descD',{}) # if descriptive dictionary was saved, restore it
             
