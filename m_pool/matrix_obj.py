@@ -213,17 +213,23 @@ class Matrix(object):
         else:
             sL = ['Matrix %s (shape=%s) %s (units=%s)'%(self.name, str(self.matValArr.shape),self.name, self.units)]
         for A in self.axisL:
-            sL.append( str(A) )
+            s = str(A)
+            ssL = s.split('\n')
+            for s in ssL:
+                sL.append( '    ' + s )
+            #sL.append( str(A) )
         
         return '\n'.join( sL )
 
     def __str__(self):
-        if self.matValArr is None:
-            sL = ['Matrix %s (shape=%s) %s (units=%s)'%(self.name, str(self.matValArr),self.name, self.units)]
-        else:
-            sL = ['Matrix %s (shape=%s) %s (units=%s)'%(self.name, str(self.matValArr.shape),self.name, self.units)]
-        for A in self.axisL:
-            sL.append( str(A) )
+        s = self.short_summ()
+        sL = s.split('\n')
+        #if self.matValArr is None:
+        #    sL = ['Matrix %s (shape=%s) %s (units=%s)'%(self.name, str(self.matValArr),self.name, self.units)]
+        #else:
+        #    sL = ['Matrix %s (shape=%s) %s (units=%s)'%(self.name, str(self.matValArr.shape),self.name, self.units)]
+        #for A in self.axisL:
+        #    sL.append( str(A) )
         
         sL.append( str(self.matValArr) )
         return '\n'.join( sL )

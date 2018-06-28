@@ -144,6 +144,16 @@ class MatrixPool(object):
             sL.append( '  Matrix:%s, shape=%s, units=%s, %%full=%i'%(M.name, M.shape(), M.units, M.iPercentFull()) )
         return '\n'.join( sL )
     
+    def summ(self):
+        sL = ['MatrixPool: %s'%self.name ]
+        for M in self.matrixL:
+            s = M.short_summ()
+            ssL = s.split('\n')
+            for s in ssL:
+                sL.append( '    ' + s )
+        return '\n'.join( sL )
+        
+    
     def __len__(self):
         return len( self.matrixL )
     
@@ -299,3 +309,5 @@ if __name__=="__main__":
     print MP
     #MP.save_to_pickle()
     #MP.save_to_hdf5()
+    print '='*55
+    print MP.summ()
