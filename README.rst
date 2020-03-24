@@ -3,7 +3,7 @@
 
 .. image:: https://img.shields.io/pypi/v/M_Pool.svg
         
-.. image:: https://img.shields.io/badge/python-3.7-blue
+.. image:: https://img.shields.io/badge/python-3.6|3.7-blue
 
 .. image:: https://img.shields.io/pypi/l/M_Pool.svg
 
