@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
 import numpy as np
-from axis_obj import Axis
+from m_pool.axis_obj import Axis
 
 def axis_obj_dammit( axOrD ):
     '''No Matter What, return an Axis obj'''
@@ -84,12 +86,12 @@ if __name__=="__main__":
     
     AP = AxisPool( {'axesDefL':axesDefL} )
         
-    print AP
+    print(AP)
     #print AP.axisD
-    print '_'*20,'Add another axis called "mr"','_'*20
+    print('_'*20,'Add another axis called "mr"','_'*20)
     AP.add_axis( mrAxis )
-    print AP
-    print '_'*20,'Add value 2.5 to axis "mr"','_'*20
+    print(AP)
+    print('_'*20,'Add value 2.5 to axis "mr"','_'*20)
     i =AP.add_value_to_Axis( 'mr', 2.5 )
-    print 'Added 2.5 at position',i,'in "mr"'
-    print AP
+    print('Added 2.5 at position',i,'in "mr"')
+    print(AP)

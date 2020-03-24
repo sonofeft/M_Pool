@@ -1,2 +1,14 @@
 ________tk_nosy UNITTEST RUN# 1_________
 
+{Item #1} test_interp, builtins.AssertionError
+Traceback (most recent call last):
+  File "d:\Python37\lib\unittest\case.py", line 59, in testPartExecutor
+    yield
+  File "d:\Python37\lib\unittest\case.py", line 628, in run
+    testMethod()
+  File "D:\2020_py_proj\M_Pool\m_pool\tests\test_matrix_pool.py", line 80, in test_interp
+    self.assertAlmostEqual(val, 166.56398645, places=5)
+  File "d:\Python37\lib\unittest\case.py", line 906, in assertAlmostEqual
+    raise self.failureException(msg)
+AssertionError: 164.69899853053423 != 166.56398645 within 5 places (1.8649879194657615 difference)
+

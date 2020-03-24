@@ -1,20 +1,13 @@
 
-
 .. image:: https://travis-ci.org/sonofeft/M_Pool.svg?branch=master
-    :target: https://travis-ci.org/sonofeft/M_Pool
 
 .. image:: https://img.shields.io/pypi/v/M_Pool.svg
-    :target: https://pypi.python.org/pypi/m_pool
         
-.. image:: https://img.shields.io/pypi/pyversions/M_Pool.svg
-    :target: https://wiki.python.org/moin/Python2orPython3
+.. image:: https://img.shields.io/badge/python-3.7-blue
 
 .. image:: https://img.shields.io/pypi/l/M_Pool.svg
-    :target: https://pypi.python.org/pypi/m_pool
 
-
-A Wrapper For Numpy Arrays
-==========================
+**A Wrapper For Numpy Arrays**
 
 Provides Named Axes, Interpolation, Iteration, Disk Persistence And Numerical Calcs
 
@@ -24,7 +17,6 @@ See the Code at: `<https://github.com/sonofeft/M_Pool>`_
 See the Docs at: `<http://m_pool.readthedocs.org/en/latest/>`_
 
 See PyPI page at:`<https://pypi.python.org/pypi/m_pool>`_
-
 
 
 M_Pool wraps multidimensional numpy arrays to provide the following features::

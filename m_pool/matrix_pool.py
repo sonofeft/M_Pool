@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: ascii -*-
+# -*- coding: utf8 -*-
 
 r"""
 A wrapper for numpy arrays providing named axes, interpolation, iteration, disk persistence and numerical calcs
@@ -81,16 +81,16 @@ exec( open(os.path.join( here,'_version.py' )).read() )  # creates local __versi
 __email__ = "cet@appliedpython.com"
 __status__ = "3 - Alpha" # "3 - Alpha", "4 - Beta", "5 - Production/Stable"
 
-import cPickle as pickle
+import pickle as pickle
 import os
 import numpy as np
 try:
     import tables
 except:
-    print '... WARNING... No HDF5 Support Available (failed import tables)'
-from axis_obj import Axis
-from axis_pool import AxisPool
-from matrix_obj import Matrix
+    print('... WARNING... No HDF5 Support Available (failed import tables)')
+from m_pool.axis_obj import Axis
+from m_pool.axis_pool import AxisPool
+from m_pool.matrix_obj import Matrix
 
 class MatrixPool(object):
     """
@@ -146,6 +146,13 @@ class MatrixPool(object):
     
     def summ(self):
         sL = ['MatrixPool: %s'%self.name ]
+        if self.descD is not None:
+            keyL = sorted( list(self.descD.keys()), key=str.lower )
+            m = max( [len(str(k)) for k in keyL] )
+            fmt = '%' + '%is'%m
+            for key in keyL:
+                sL.append( '  ' + fmt%str(key) + ' : ' + str(self.descD[key]) )
+        
         for M in self.matrixL:
             s = M.short_summ()
             ssL = s.split('\n')
@@ -168,18 +175,21 @@ class MatrixPool(object):
         if fname==None:
             fname = '%s_mpool.h5'%(self.name)
             
-        h5file = tables.openFile(fname, mode='w')
-        h5file.createArray("/", 'axes_name_list', [A.name for A in self.axisPoolObj], "String array")
-        h5file.createArray("/", 'matrix_name_list', [M.name for M in self.matrixL], "String array")
-        axes_group = h5file.createGroup("/", 'axes', 'All the Axes used in Matrix Pool')
-        mat_group = h5file.createGroup("/", 'matrices', 'All the Matrices used in Matrix Pool')
+        h5file = tables.open_file(fname, mode='w')
+        # Get the HDF5 root group
+        root = h5file.root
+        
+        h5file.create_array(root, 'axes_name_list', [A.name for A in self.axisPoolObj], "String array")
+        h5file.create_array(root, 'matrix_name_list', [M.name for M in self.matrixL], "String array")
+        axes_group = h5file.create_group(root, 'axes', 'All the Axes used in Matrix Pool')
+        mat_group = h5file.create_group(root, 'matrices', 'All the Matrices used in Matrix Pool')
         
         '''  {'name':self.name, 'valueL':self.valueL, 'units':self.units, 
             'transform':self.transform, 'roundDigits':self.roundDigits}'''
         for A in self.axisPoolObj:
-            d = h5file.createArray(axes_group, A.name, A.valueArr) 
-            h5file.createArray(axes_group, 'transform_%s'%A.name, A.transArr) 
-            h5file.createArray(axes_group, 'desc_%s'%A.name, 
+            d = h5file.create_array(axes_group, A.name, A.valueArr) 
+            h5file.create_array(axes_group, 'transform_%s'%A.name, A.transArr) 
+            h5file.create_array(axes_group, 'desc_%s'%A.name, 
                 [str(A.units), str(A.transform), str(A.roundDigits)], "String array")
             #d.transform_desc = A.transform
             #d.roundDigits_desc = A.roundDigits
@@ -190,22 +200,22 @@ class MatrixPool(object):
         filters = tables.Filters(complib='blosc', complevel=5)    
         
         for M in self.matrixL:    
-            ds = h5file.createCArray(mat_group, M.name, atom, M.matValArr.shape, filters=filters)
+            ds = h5file.create_carray(mat_group, M.name, atom, M.matValArr.shape, filters=filters)
             ds.attrs.units = M.units
             ds[:] = M.matValArr
                 
-            h5file.createArray(mat_group, M.name+'_axis_list', [aname for aname in M.axisNameL], "String array")
+            h5file.create_array(mat_group, M.name+'_axis_list', [aname for aname in M.axisNameL], "String array")
             
-            
+        h5file.flush()
         h5file.close()
     
     def read_from_hdf5(self, fname=None):
         if fname==None:
             fname = '%s_mpool.h5'%(self.name)
-            print 'Reading:', fname
+            print('Reading:', fname)
             
         if os.path.exists(fname):            
-            h5file = tables.openFile(fname, mode='r')
+            h5file = tables.open_file(fname, mode='r')
                
             # reinit self
             self.axisPoolObj = AxisPool()
@@ -216,26 +226,33 @@ class MatrixPool(object):
             root = h5file.root
             
             # First get the axes 
-            axis_nameL = [_ for _ in root.axes_name_list]
-            print 'axis_nameL =',axis_nameL
+            axis_nameL = [_.decode('utf8') for _ in root.axes_name_list]
+            print('axis_nameL =',axis_nameL)
 
             for aname in axis_nameL:
+                #print('Getting axis_nameL, aname =', aname)
                 val_arr = getattr( root.axes, aname ).read()
                 dname = 'desc_' + aname
                 desc = getattr( root.axes, dname ).read()
                 units, trans, alen = desc
+                #print('units, trans, alen =',units, trans, alen)
+                units, trans, alen = units.decode('utf8'), trans.decode('utf8'), alen.decode('utf8')
                 
                 A = Axis({'name':aname, 'valueL':val_arr, 'units':units, 'transform':trans})
                 self.add_axis( A )
             
             # Then get the matrices
-            matrix_nameL = [_ for _ in root.matrix_name_list]
-            print 'matrix_nameL =',matrix_nameL
+            matrix_nameL = [_.decode('utf8') for _ in root.matrix_name_list]
+            print('matrix_nameL =',matrix_nameL)
 
             for mname in matrix_nameL:
                 m = getattr( root.matrices, mname ).read()
                 units = getattr( root.matrices, mname ).attrs.units
                 a_list = getattr( root.matrices, mname+'_axis_list' ).read()
+                #print('units =', units, type(units))
+                
+                a_list = [_.decode('utf8') for _ in a_list]
+                #print('a_list =', a_list)
                 self.add_matrix( name=mname, units=units, axisNameL=list(a_list), matValArr=m )
             
             h5file.close()
@@ -255,7 +272,7 @@ class MatrixPool(object):
     def read_from_pickle(self, fname=None):
         if fname==None:
             fname = '%s_matrix.pool'%(self.name)
-            print 'Reading:', fname
+            print('Reading:', fname)
             
         if os.path.exists(fname):            
             
@@ -281,7 +298,7 @@ class MatrixPool(object):
                 #print 'add Matrix',MD
                 self.add_matrix( **MD )
         else:
-            print '...WARNING... could not find:',fname
+            print('...WARNING... could not find:',fname)
 
 if __name__=="__main__":
 
@@ -306,8 +323,8 @@ if __name__=="__main__":
                 M.setByName( pc=pc, eps=eps, mr=mr, val=eps+pc+mr+0.321 )
     
 
-    print MP
+    print(MP)
     #MP.save_to_pickle()
     #MP.save_to_hdf5()
-    print '='*55
-    print MP.summ()
+    print('='*55)
+    print(MP.summ())

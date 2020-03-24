@@ -15,13 +15,13 @@ for eps in epsAxis:
         for mr in mrAxis:
             M.setByName( pc=pc, eps=eps, mr=mr, val=eps+pc+mr )
 
-print M
+print(M)
 
-print '_'*55
+print('_'*55)
 
 newM = M.get_sub_matrix( pc=200. )
-print newM
+print(newM)
 
-print '_'*55
+print('_'*55)
 newM = M.get_sub_matrix( pc=300., eps=50.0 )
-print newM
+print(newM)

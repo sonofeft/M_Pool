@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
 import sys
 import itertools
 import copy
@@ -6,11 +8,11 @@ from scipy.interpolate import interp1d
 try:
     from scipy.optimize import minimize
 except:
-    print "...WARNING... scipy.optimize.minimize did NOT import..."
-    print "   ... min/max functions are UNAVAILABLE ..."
+    print("...WARNING... scipy.optimize.minimize did NOT import...")
+    print("   ... min/max functions are UNAVAILABLE ...")
 
-from axis_obj import Axis
-from axis_pool import AxisPool, axis_obj_dammit
+from m_pool.axis_obj import Axis
+from m_pool.axis_pool import AxisPool, axis_obj_dammit
 
 
 class Matrix(object):
@@ -41,7 +43,7 @@ class Matrix(object):
             self.axisNameL = D.get('axisNameL')
             self.axisPoolObj = D.get('axisPoolObj')
         except:
-            print 'ERROR... both axisNameL and axisPoolObj MUST be specified in Matrix'
+            print('ERROR... both axisNameL and axisPoolObj MUST be specified in Matrix')
             sys.exit()
         
         self.axisL = [self.axisPoolObj.axisD[name] for name in self.axisNameL]
@@ -104,7 +106,7 @@ class Matrix(object):
             
         res = minimize(fun, tuple(startValL), method=method, 
             bounds=tuple(boundsL), tol=tol, options={'disp':False})
-        print res
+        print(res)
         
         fun( res.x )# make sure interpD is set
         
@@ -142,7 +144,7 @@ class Matrix(object):
             xval = A.transObj( kwds[ A.name ] )
             kind = min(len(A)-1, order)
             #print '... interpolating into',A.name,' xval=',xval,A
-            for mindeces in itertools.product(*(range(s) for s in m.shape)):
+            for mindeces in itertools.product(*(list(range(s)) for s in m.shape)):
                 # mindeces is a tuple index into m
                 # indeces is index into last m
                 
@@ -159,8 +161,8 @@ class Matrix(object):
                 try:
                     m[mindeces] = interp1d( A.transArr , yL, kind=kind)(xval)
                 except:
-                    print 'Extrapolating',A.name,'axis =',A.transArr,'  xval=',xval
-                    print '           yL =',yL
+                    print('Extrapolating',A.name,'axis =',A.transArr,'  xval=',xval)
+                    print('           yL =',yL)
                     if xval>=A.transArr[-2]:
                         m[mindeces] = yL[-1] # assume out of bounds at high end
                     else:
@@ -176,8 +178,8 @@ class Matrix(object):
         try:
             result = interp1d( A.transArr, m, kind=kind)( xval )
         except:
-            print 'Extrapolating','axis =',A,'  xval=',xval
-            print '           m =',m
+            print('Extrapolating','axis =',A,'  xval=',xval)
+            print('           m =',m)
             if xval>=A.transArr[-2]:
                 result = m[-1] # assume out of bounds at high end
             else:
@@ -240,7 +242,7 @@ class Matrix(object):
         
     def __setitem__(self, iL, val): # use as M[(i,j,k)] = val
         if val is None:
-            print 'ERROR... illegal value for "val" in Matrix.set.  val =',val
+            print('ERROR... illegal value for "val" in Matrix.set.  val =',val)
         else:
             self.matValArr[iL] = float(val)
 
@@ -305,17 +307,17 @@ class Matrix(object):
         return np.prod( self.matValArr.shape )
         
     def iter_indeces(self): # an iterator over the indeces of the matrix
-        for indeces in itertools.product(*(range(s) for s in self.matValArr.shape)):
+        for indeces in itertools.product(*(list(range(s)) for s in self.matValArr.shape)):
             yield indeces
         
     def iter_items(self): # iterator returns indeces and value at location
-        for indeces in itertools.product(*(range(s) for s in self.matValArr.shape)):
+        for indeces in itertools.product(*(list(range(s)) for s in self.matValArr.shape)):
             val = self.matValArr[indeces]
             yield indeces,val
         
     def full_iter_items(self): # iterator returns indeces, value and axes value dictionary
         self.axisNameL
-        for indeces in itertools.product(*(range(s) for s in self.matValArr.shape)):
+        for indeces in itertools.product(*(list(range(s)) for s in self.matValArr.shape)):
             val = self.matValArr[indeces]
             D={}
             for i,axname in enumerate( self.axisNameL ):
@@ -476,7 +478,7 @@ class Matrix(object):
         orig_indexL = is_in_cutL[:] # hold index into axis for input axis value
         newAxisNameL = [] # smaller list of axis names in new, smaller Matrix
         for ia,axname in enumerate(self.axisNameL):
-            if kwds.has_key(axname):
+            if axname in kwds:
                 is_in_cutL[ia]=1
                 
                 # Also hold const index in cut axis
@@ -487,7 +489,7 @@ class Matrix(object):
         #print 'is a slice plane =',is_in_cutL
         #print 'Index of slice plane =',orig_indexL
         
-        new_name = self.name +'_'+ '_'.join( ['%s=%s'%(n,v) for n,v in kwds.items()] )
+        new_name = self.name +'_'+ '_'.join( ['%s=%s'%(n,v) for n,v in list(kwds.items())] )
         M = Matrix( {'name':new_name,  'units':self.units, 
             'axisNameL':newAxisNameL, 'axisPoolObj':self.axisPoolObj} )
         
@@ -519,7 +521,7 @@ if __name__=="__main__":
         
     axisNameL = ['eps','pc','mr']
     shape = [len(AP.axisD[name])  for name in axisNameL]
-    print 'shape =',shape
+    print('shape =',shape)
     matValArr = np.zeros( shape )
     n0,n1,n2 = axisNameL
     for i0,v0 in enumerate(AP.axisD[n0]):
@@ -531,30 +533,30 @@ if __name__=="__main__":
         'axisNameL':axisNameL, 'axisPoolObj':AP} )
         
     #print M.axisL
-    print M
+    print(M)
     #print type( M.axisL[0] ) == Axis
     #print type( {1:1} ) == dict
-    print M[(0,0,0)],M[3,2,4],'__getitem__ examples'
-    print '_'*55
-    print mrAxis.matrixConnectionL
+    print(M[(0,0,0)],M[3,2,4],'__getitem__ examples')
+    print('_'*55)
+    print(mrAxis.matrixConnectionL)
     #epsAxis.add_value( 16.0 )
     j = AP.add_value_to_Axis('pc', 250.0)
-    print M
-    print '   ...Added new axis value.  Matrix expands to accomodate'
-    print '_'*55
-    for i in xrange( len(epsAxis) ):
-        for k in xrange( len(mrAxis) ):
+    print(M)
+    print('   ...Added new axis value.  Matrix expands to accomodate')
+    print('_'*55)
+    for i in range( len(epsAxis) ):
+        for k in range( len(mrAxis) ):
             M[(i,j,k)] = 7777.0
-    print M
-    print '   ...Set inserted value to 7777.  Use index from axis value insert.'
-    print '_'*55
+    print(M)
+    print('   ...Set inserted value to 7777.  Use index from axis value insert.')
+    print('_'*55)
     
-    print
+    print()
     pc = 250.0
     for eps in epsAxis:
         for mr in mrAxis:
             M.setByName( pc=pc, eps=eps, mr=mr, val=9999.0 )
-    print M
-    print '   ...change 7777 to 9999 using dictionary indexing pc=pc.'
-    print '_'*55
+    print(M)
+    print('   ...change 7777 to 9999 using dictionary indexing pc=pc.')
+    print('_'*55)
     

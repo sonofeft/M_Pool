@@ -7,6 +7,9 @@ History
 GitHub Log
 ----------
 
+* March 23, 2020
+    - (by: sonofeft)
+        - Converted to python 3.7
 
 * Nov 13, 2015
     - (by: sonofeft)

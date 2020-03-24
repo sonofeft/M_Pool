@@ -15,10 +15,10 @@ for eps in epsAxis:
         for mr in mrAxis:
             M.setByName( pc=pc, eps=eps, mr=mr, val=eps+pc+mr )
 
-print M
+print(M)
 
 for indeces,D,val in M.full_iter_items():
-    print indeces,D,val
+    print(indeces,D,val)
 
 '''
 s = (5, 4, 3)

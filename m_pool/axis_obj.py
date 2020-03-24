@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
 import bisect
 import numpy as np
-from transform import Transform
+from m_pool.transform import Transform
 
 class Axis(object):
     '''An Axis object is used to define the axes of Matrix objects
@@ -112,7 +114,7 @@ class Axis(object):
         
         else:
             if self.valueL[i]==val:
-                print val,'is already in Axis... skipping insert'
+                print(val,'is already in Axis... skipping insert')
                 return None
             
             #print 'i=',i,'for',val,'inserted into',self.valueL,'v[i]=',self.valueL[i]
@@ -129,24 +131,24 @@ class Axis(object):
 if __name__=="__main__":
 
     epsAxis = Axis({'name':'eps', 'valueL':[1.,2.,3.,5.,10.,20.,40.], 'units':'', 'transform':'log10'})
-    print epsAxis.get_pickleable_dict()
-    print
-    print 'epsAxis.transArr =',epsAxis.transArr
-    print
+    print(epsAxis.get_pickleable_dict())
+    print()
+    print('epsAxis.transArr =',epsAxis.transArr)
+    print()
     epsAxis.add_value( 1.6 )
     epsAxis.add_value( 1.5 )
     epsAxis.add_value( 7 )
     epsAxis.add_value( 40.0001 )
     epsAxis.add_value( 0.0 )
-    print epsAxis.valueArr
-    print 'len(epsAxis) =',len(epsAxis)
-    print
+    print(epsAxis.valueArr)
+    print('len(epsAxis) =',len(epsAxis))
+    print()
     for val in [0, -1.1, 0.5, 1, 1.25, 4,40, 40.0001, 40.00001, 40.000001]:
     
         i = epsAxis.getExactIndex(val)
         if i==None:
-            print 'for val=',val,' i=',i
+            print('for val=',val,' i=',i)
         else:
-            print 'for val=',val,' i=%i'%i, ' valueL[i]=',epsAxis.valueL[i]
+            print('for val=',val,' i=%i'%i, ' valueL[i]=',epsAxis.valueL[i])
     
     

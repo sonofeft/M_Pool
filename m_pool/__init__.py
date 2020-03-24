@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
 import os
 
 here = os.path.abspath(os.path.dirname(__file__))

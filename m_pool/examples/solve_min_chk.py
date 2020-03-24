@@ -22,7 +22,7 @@ for eps in epsAxis:
 
 
 #print M
-print 'len(M.shape()) =',len(M.shape())
+print('len(M.shape()) =',len(M.shape()))
 interpD, max_val = M.solve_interp_min( order=2, method='TNC', tol=1.0E-8)
-print 'interpD =',interpD
-print 'max_val =',max_val
+print('interpD =',interpD)
+print('max_val =',max_val)

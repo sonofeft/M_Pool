@@ -25,15 +25,15 @@ D = {'pc':250., 'eps':35.0, 'mr':1.5}
 #val = M.interp(order=2, **{'pc':250., 'eps':35.0, 'mr':1.5})
 
 #print M
-print 'len(M.shape()) =',len(M.shape())
+print('len(M.shape()) =',len(M.shape()))
 
 val = M.interp(order=1, **D)
-print 'type(val) =',type(val)
-print 'interp_1  =',val,'   func =',chkfunc(D['pc'],D['eps'],D['mr'])
+print('type(val) =',type(val))
+print('interp_1  =',val,'   func =',chkfunc(D['pc'],D['eps'],D['mr']))
 
 val = M.interp(order=2, **D)
-print 'interp_2  =',val,'   func =',chkfunc(D['pc'],D['eps'],D['mr'])
+print('interp_2  =',val,'   func =',chkfunc(D['pc'],D['eps'],D['mr']))
 
 val = M.interp(order=3, **D)
-print 'interp_3  =',val,'   func =',chkfunc(D['pc'],D['eps'],D['mr'])
+print('interp_3  =',val,'   func =',chkfunc(D['pc'],D['eps'],D['mr']))
 

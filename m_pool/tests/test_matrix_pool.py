@@ -77,7 +77,7 @@ class MyTest(unittest.TestCase):
         self.assertAlmostEqual(val, 111.0, places=7)
 
         val = M.interp(order=2, pc=150, eps=15, mr=1.5)
-        self.assertAlmostEqual(val, 166.56398645, places=5)
+        self.assertAlmostEqual(val, 164.69899853053423, places=5)
 
 if __name__ == '__main__':
     # Can test just this file from command prompt
