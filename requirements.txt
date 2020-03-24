@@ -3,4 +3,3 @@ coverage
 numpy
 numexpr
 scipy
-tables
