@@ -1,15 +1,13 @@
 language: python
 python:
-    - "3.6"
+    - "3.7"
 
-virtualenv:
-    system_site_packages: true
 before_install:
+    - "sudo apt-get update"
     - sudo apt-get install python-numpy
     - sudo apt-get install python-scipy
-    - sudo apt-get install python-tables
 install:
-    - pip install future 
-    - pip install coverage 
+    - "sudo pip install --upgrade pip"
+    - "python setup.py install"
 script:
-    - nosetests
+    - py.test
