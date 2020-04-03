@@ -18,7 +18,7 @@ for eps in epsAxis:
 print(M)
 
 for indeces,D,val in M.full_iter_items():
-    print(indeces,D,val)
+    print(indeces,D,val, '  M[indeces] =', M[indeces])
 
 '''
 s = (5, 4, 3)

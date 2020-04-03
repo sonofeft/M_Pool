@@ -92,6 +92,20 @@ from m_pool.axis_obj import Axis
 from m_pool.axis_pool import AxisPool
 from m_pool.matrix_obj import Matrix
 
+def read_mpool( name='' ):
+    if not name:
+        name = '%s_matrix.pool'%(name)
+    if not name.endswith('_matrix.pool'):
+        name += '_matrix.pool'
+        
+            
+    if os.path.isfile(name):            
+        MP = MatrixPool(name=name)
+        MP.read_from_pickle(fname=name) # Opens "CHECK_matrix.pool"
+        return MP
+    else:
+        print('ERROR... No Matrix File Found For:', name)
+
 class MatrixPool(object):
     """
     A wrapper for numpy arrays providing named axes, interpolation, iteration, disk persistence and numerical calcs
@@ -144,17 +158,23 @@ class MatrixPool(object):
             sL.append( '  Matrix:%s, shape=%s, units=%s, %%full=%i'%(M.name, M.shape(), M.units, M.iPercentFull()) )
         return '\n'.join( sL )
     
-    def summ(self):
+    def summ(self, use_long=False):
         sL = ['MatrixPool: %s'%self.name ]
         if self.descD is not None:
             keyL = sorted( list(self.descD.keys()), key=str.lower )
-            m = max( [len(str(k)) for k in keyL] )
+            try:
+                m = max( [len(str(k)) for k in keyL] )
+            except:
+                m = 6
             fmt = '%' + '%is'%m
             for key in keyL:
                 sL.append( '  ' + fmt%str(key) + ' : ' + str(self.descD[key]) )
         
         for M in self.matrixL:
-            s = M.short_summ()
+            if use_long:
+                s = M.long_summ()
+            else:
+                s = M.short_summ()
             ssL = s.split('\n')
             for s in ssL:
                 sL.append( '    ' + s )
@@ -260,6 +280,10 @@ class MatrixPool(object):
     def save_to_pickle(self, fname=None):
         if fname==None:
             fname = '%s_matrix.pool'%(self.name)
+        if not fname.endswith('_matrix.pool'):
+            fname += '_matrix.pool'
+        
+        
         D = {}
         D['axisL'] = [A.get_pickleable_dict() for A in self.axisPoolObj]
         D['matrixL'] = [M.get_pickleable_dict() for M in self.matrixL]
@@ -272,13 +296,27 @@ class MatrixPool(object):
     def read_from_pickle(self, fname=None):
         if fname==None:
             fname = '%s_matrix.pool'%(self.name)
-            print('Reading:', fname)
+        if not fname.endswith('_matrix.pool'):
+            fname += '_matrix.pool'
+            
+        print('Reading:', fname)
             
         if os.path.exists(fname):            
             
-            fInp = open(fname, 'rb')
-            D = pickle.load( fInp )
-            fInp.close()
+            try:
+                fInp = open(fname, 'rb')
+                D = pickle.load( fInp )
+                got_it = True
+            except:
+                got_it = False
+            finally:
+                fInp.close()
+                
+            if not got_it:
+                fInp = open(fname, 'rb')
+                #D = pickle.load( fInp, encoding='bytes' )
+                D = pickle.load( fInp, encoding='latin1' )
+                fInp.close()
             
             # reinit self
             self.axisPoolObj = AxisPool()

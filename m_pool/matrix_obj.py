@@ -5,6 +5,7 @@ import itertools
 import copy
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.interpolate import RegularGridInterpolator
 try:
     from scipy.optimize import minimize
 except:
@@ -13,7 +14,13 @@ except:
 
 from m_pool.axis_obj import Axis
 from m_pool.axis_pool import AxisPool, axis_obj_dammit
+from m_pool.InterpProp_scipy import InterpProp
 
+try:
+    import pylab
+    got_pylab = True
+except:
+    got_pylab = False
 
 class Matrix(object):
     '''An Matrix object holds data for N dimensional data
@@ -58,6 +65,9 @@ class Matrix(object):
         
         # temporary list of numpy matrices used for interpolation
         self.terp_mL = [self.matValArr] # list of matrices used for interpolation
+        
+        self.terp_reg_grid = None # will be initialized if used
+        self.terp_reg_grid_shape = None
 
     def solve_interp_min(self, order=3, method='TNC', tol=1.0E-8): # method can be: SLSQP, TNC
         return self.solve_interp_minmax( find_min=True, order=order, method=method, tol=tol)
@@ -115,7 +125,28 @@ class Matrix(object):
         return interpD, minmax_val
         
 
-    def interp(self, order=3, **kwds): # kwds contains axis names... returns interpolated val
+    def interp(self, order=1, **kwds): # kwds contains axis names... returns interpolated val
+        if order>1:
+            return self.interp_higher_order( order=order, **kwds )
+        else:
+            return self.interp_linear( order=order, **kwds )
+    
+    def interp_linear(self, **kwds ):
+        
+        if (self.terp_reg_grid is None) or (self.terp_reg_grid_shape != self.matValArr.shape ):
+            
+            self.terp_reg_grid_shape = self.matValArr.shape
+            
+            axis_valL = [ A.get_trans_valueL() for A in self.axisL ]
+            self.terp_reg_grid = RegularGridInterpolator(axis_valL, self.matValArr)
+        
+        ptArr = np.array( [A.transObj( kwds[ A.name ] ) for A in self.axisL] )
+        
+        ans = self.terp_reg_grid( ptArr )
+        #print( 'ans=',ans )
+        return ans[0]
+        
+    def interp_higher_order(self, order=3, **kwds): # kwds contains axis names... returns interpolated val
         '''
         Call as: M.interp(order=3, pc=100, eps=20, mr=2.0)
         
@@ -159,10 +190,13 @@ class Matrix(object):
                 #print 'xL=',A.transArr
                 #print 'yL=',yL
                 try:
-                    m[mindeces] = interp1d( A.transArr , yL, kind=kind)(xval)
+                    # do NOT set , fill_value="extrapolate" 
+                    #     ... let if fail so Extrapolating logic is used.
+                    m[mindeces] = interp1d( A.transArr , yL, kind=kind, fill_value="extrapolate")(xval)
                 except:
-                    print('Extrapolating',A.name,'axis =',A.transArr,'  xval=',xval)
-                    print('           yL =',yL)
+                    #print('Extrapolating',A.name,'axis =',A.transArr,'  xval=',xval)
+                    print('Extrapolating',A.name,'axis  %s='%A.name, kwds[ A.name ])
+                    #print('           yL =',yL)
                     if xval>=A.transArr[-2]:
                         m[mindeces] = yL[-1] # assume out of bounds at high end
                     else:
@@ -176,7 +210,7 @@ class Matrix(object):
         #print 'm =',m
         #print 'axis =',A,'  xval=',xval
         try:
-            result = interp1d( A.transArr, m, kind=kind)( xval )
+            result = interp1d( A.transArr, m, kind=kind, fill_value="extrapolate")( xval )
         except:
             print('Extrapolating','axis =',A,'  xval=',xval)
             print('           m =',m)
@@ -208,6 +242,18 @@ class Matrix(object):
     def insert_dimension(self, iaxis,i ):
         newMat = np.insert( self.matValArr, i, 0.0, axis=iaxis )
         self.matValArr = newMat
+
+    def long_summ(self):
+        sL = [self.short_summ()]
+        
+        sL.append( 'get_range   = %s'%( self.get_range(), ))
+        sL.append( 'get_ave     = %s'%( self.get_ave(), ))
+        sL.append( 'get_mean    = %s'%( self.get_mean(), ))
+        sL.append( 'get_std     = %s'%( self.get_std(), ))
+        sL.append( 'get_median  = %s'%( self.get_median(), ))
+        sL.append( 'get_min_max = %s'%( self.get_min_max(), ))
+
+        return '\n'.join( sL )
 
     def short_summ(self):
         if self.matValArr is None:
@@ -244,7 +290,7 @@ class Matrix(object):
         if val is None:
             print('ERROR... illegal value for "val" in Matrix.set.  val =',val)
         else:
-            self.matValArr[iL] = float(val)
+            self.matValArr[tuple(iL)] = float(val)
 
     def setByName(self, **kwds): # kwds contains axis names and "val"
         '''Call as: M.setByName(pc=100, eps=20, mr=2.0, val=29.23)'''
@@ -261,14 +307,39 @@ class Matrix(object):
         for A in self.axisL:
             iL.append( A.getExactIndex( kwds[A.name] ) )
         return self.matValArr[tuple(iL)]
+    
+    def get_list_of_peak_indeces(self):
+        """Returns a list of all occurances of max value"""
         
+        max_val = self.get_max()
+        return np.argwhere( self.matValArr == max_val )
+        
+    
     def get_peak_indeces(self):
+        """Returns 1st occurance of max value"""
         imax = np.unravel_index(self.matValArr.argmax(), self.matValArr.shape)
         return imax
+
+    def get_peak_dict(self):
+        """Returns 1st occurance of max value"""
+        imax = np.unravel_index(self.matValArr.argmax(), self.matValArr.shape)
+        D = {}
+        for i,im in enumerate( imax ):
+            D[self.axisL[i].name] = self.axisL[i][im]
+        return D
     
     def get_minima_indeces(self):
+        """Returns 1st occurance of min value"""
         imin = np.unravel_index(self.matValArr.argmin(), self.matValArr.shape)
         return imin
+
+    def get_minima_dict(self):
+        """Returns 1st occurance of min value"""
+        imin = np.unravel_index(self.matValArr.argmin(), self.matValArr.shape)
+        D = {}
+        for i,im in enumerate( imin ):
+            D[self.axisL[i].name] = self.axisL[i][im]
+        return D
     
     def get_min_max(self):
         return np.nanmin(self.matValArr), np.nanmax(self.matValArr)
@@ -334,7 +405,7 @@ class Matrix(object):
         Mclone.matValArr = np.negative( Mclone.matValArr )
         return Mclone
         
-        return self * (-1.0)
+        #return self * (-1.0)
         
     def __abs__(self):
         Mclone = self.clone()
@@ -503,6 +574,354 @@ class Matrix(object):
             M[ tuple(new_indeces) ] =  self.matValArr[ tuple(orig_indexL) ]
         
         return M
+    
+    def values_in_range(self, **kwds):
+        for k,v in kwds.items():
+            A = self.get_axis_by_name( k )
+            if not A.value_in_range( v ):
+                return False
+        return True
+    
+    def get_axis_by_name(self, aname):
+        for a in self.axisL:
+            if a.name == aname:
+                return a
+        return None
+    
+    def matrix_axis_name_list(self):
+        return [a.name for a in self.axisL]
+    
+    def is_axis_name(self, axis_name):
+        return axis_name in self.matrix_axis_name_list()
+
+    
+    def get_indeces_where(self, if_gt=0.0, if_lt=None):
+        """Return indeces of values in range. Ignore if set to None"""
+        if if_lt is None:
+            return np.argwhere( self.matValArr > if_gt )
+        elif if_gt is None:
+            return np.argwhere( self.matValArr < if_lt )
+        else:
+            return np.argwhere( self.matValArr < if_lt and self.matValArr > if_gt )
+    
+    def get_dict_of_indeces(self, indeces):
+        D={}
+        for i,axname in enumerate( self.axisNameL ):
+            D[axname] = self.axisL[ i ][indeces[i]]
+        return D
+    
+    def fill_missing_from_good_neighbors(self, bad_if_lt=0.0, bad_if_gt=None,
+                                         good_if_gt=0.0, good_if_lt=None):
+                                             
+        badL = self.get_indeces_where( if_gt=bad_if_gt, if_lt=bad_if_lt)
+        
+        for iL in badL:
+            good_ivL = self.get_nearest_good_neighbors(iL, good_if_gt=good_if_gt, good_if_lt=good_if_lt)
+            
+            sum_wts = 0.0 # sum of data pt weights
+            sum_val_x_wts = 0.0 # sum of value * wt
+            
+            for good_iv in good_ivL:
+                good_indeces = good_iv[0]
+                dist = sum( [ abs(i1-i2) for (i1,i2) in zip(iL,good_indeces) ] )
+                #print(dist, iL, good_indeces)
+                #print(iL, good_indeces, dist)
+                if dist > 0:
+                    wt = 1.0/float(dist)
+                    sum_wts += wt
+                    sum_val_x_wts += wt * self[ good_indeces ]
+            if sum_wts > 0.0:
+                new_val = sum_val_x_wts / sum_wts
+                
+                #iD = self.get_dict_of_indeces(iL)
+                #iD['val'] = new_val
+                #self.setByName( **iD )
+                self[ iL ] = new_val
+                
+                #print(iL,'new_val',new_val, self.get_dict_of_indeces(iL), self[iL])
+                #for good_iv in good_ivL:
+                #    print('    ',good_iv, self.get_dict_of_indeces(good_iv[0]), self[good_iv[0]])
+    
+    def get_nearest_good_neighbors(self, iL, good_if_gt=0.0, good_if_lt=None ):
+        """Return the indeces of nearest good neighbors"""
+        def is_good_val( val ):
+            
+            if good_if_gt is None:
+                return val < good_if_lt
+            elif good_if_lt is None:
+                return val > good_if_gt
+            else:
+                return val > good_if_gt and val < good_if_lt
+        
+        
+        iL = list( iL ) # makes a list copy
+        good_ivL = [] # list of tuples  (indeces, val)
+        for ia, i in enumerate( iL ):
+            a = self.axisL[ia]
+            
+            itestL = iL[:]
+            j = i+1
+            while j < len( a ):
+                itestL[ia] = j
+                if is_good_val( self[ itestL ] ):
+                    good_ivL.append( (itestL, self[itestL]) )
+                    j += len(a)
+                j += 1
+            
+            itestL = iL[:]
+            j = i-1
+            while j >= 0:
+                itestL[ia] = j
+                if is_good_val( self[ itestL ] ):
+                    good_ivL.append( (itestL, self[itestL]) )
+                    j -= len(a)
+                j -= 1
+            
+        return good_ivL
+
+    
+    def interp_missing_from_good_neighbors(self, bad_if_lt=0.0, bad_if_gt=None,
+                                           good_if_gt=0.0, good_if_lt=None):
+                                             
+        badL = self.get_indeces_where( if_gt=bad_if_gt, if_lt=bad_if_lt)
+        print( "Replacing %i bad values from Nearest Neighbors in"%len(badL), self.name )
+        
+        for iL in badL:
+            good_ivL = self.get_nearest_good_neighbors(iL, good_if_gt=good_if_gt, good_if_lt=good_if_lt)
+            
+            sum_wts = 0.0 # sum of data pt weights
+            sum_val_x_wts = 0.0 # sum of value * wt
+            
+            for good_iv in good_ivL:
+                good_indeces = good_iv[0]
+                dist = sum( [ abs(i1-i2) for (i1,i2) in zip(iL,good_indeces) ] )
+                #print(dist, iL, good_indeces)
+                #print(iL, good_indeces, dist)
+                if dist > 0:
+                    wt = 1.0/float(dist)
+                    sum_wts += wt
+                    sum_val_x_wts += wt * self[ good_indeces ]
+            if sum_wts > 0.0:
+                new_val = sum_val_x_wts / sum_wts
+                
+                #iD = self.get_dict_of_indeces(iL)
+                #iD['val'] = new_val
+                #self.setByName( **iD )
+                self[ iL ] = new_val
+                
+                #print(iL,'new_val',new_val, self.get_dict_of_indeces(iL), self[iL])
+                #for good_iv in good_ivL:
+                #    print('    ',good_iv, self.get_dict_of_indeces(good_iv[0]), self[good_iv[0]])
+    
+    def get_1d_interp_fill_value(self, i_centerL, good_if_gt=0.0, good_if_lt=None):
+        """
+        Given the indeces, i_centerL, of a point in the matrix, M, return all
+        of the 1D matrices with GOOD values as defined by good_if_gt and good_if_lt.
+        """
+        
+        valueL = [] # list of interpolated values (will take average at end)
+        
+        for ia,a in enumerate(self.axisL):
+
+            # start with a fresh center list
+            cL = list( i_centerL )
+            aL = [] # good axis value list
+            vL = [] # good value list
+            
+            for i in range( len(a) ):
+                cL[ia] = i
+                val = self[ cL ]
+            
+                if good_if_gt is None:
+                    if val < good_if_lt:
+                        aL.append( a.transObj( a.valueL[i] ) )
+                        vL.append( val )
+                elif good_if_lt is None:
+                    if val > good_if_gt:
+                        aL.append( a.transObj( a.valueL[i] ) )
+                        vL.append( val )
+                else:
+                    if val > good_if_gt and val < good_if_lt:
+                        aL.append( a.transObj( a.valueL[i] ) )
+                        vL.append( val )
+                        
+            if aL:
+                terp = InterpProp(aL, vL, extrapOK=1, linear=1)
+                valueL.append( terp( a.transObj( a.valueL[ i_centerL[ia] ] ) ) )
+                #print('  val:',val,'  terpVal:',valueL[-1], 'aL:',aL,'  vL:',vL)
+
+            if valueL:
+                val = sum(valueL) / len(valueL)
+            else:
+                val = self[ i_centerL ]
+        return val
+    
+    
+    def fill_missing_from_1d_interp(self, bad_if_lt=0.0, bad_if_gt=None,
+                                         good_if_gt=0.0, good_if_lt=None):
+                                             
+        badL = self.get_indeces_where( if_gt=bad_if_gt, if_lt=bad_if_lt)
+        print( "1D Interpolating %i bad values in"%len(badL), self.name )
+        
+        new_valD = {} # index:bad_indeces, value:val
+        for iL in badL:
+            val = self.get_1d_interp_fill_value( iL, good_if_gt=good_if_gt, good_if_lt=good_if_lt)
+            new_valD[ tuple(iL) ] = val
+            
+        for k,v in new_valD.items():
+            self[ k ] = v
+        
+        # Just in case interpolation fails, use good neighbors
+        self.interp_missing_from_good_neighbors( bad_if_lt=bad_if_lt, bad_if_gt=bad_if_gt,
+                                           good_if_gt=good_if_gt, good_if_lt=good_if_lt)
+    
+    def plot_x_param(self, xVar='', param='', fixedD=None, 
+                     interp_pts=0, interp_order=2,
+                     is_semilog=False, marker='o', markersize=0,
+                     rev_param_order=False, show_grid=True,
+                     min_val=float('-inf'), max_val=float('inf')):
+        """
+        Make a plot of xVar vs matrix value, parameterized by param.
+        If left blank, use names of 1st two axes.
+        Set any other axis values based on fixedD.
+        If not in fixedD, then use median value of axis.
+        If interp_pts>0, insert interpolated points between axis pts
+        """
+        #self.axisL self.matValArr
+        if len( self.axisL ) < 2:
+            print('ERROR... can not make plot_x_param with less than 2 axes.')
+            return
+            
+        if not got_pylab:
+            print('ERROR... pylab FAILED to import.')
+            return
+        
+        # if xVar not input, set it to one of 1st 2 axes
+        if not self.is_axis_name(xVar):
+            if param != self.axisL[0].name:
+                xVar  = self.axisL[0].name
+            else:
+                xVar  = self.axisL[1].name
+                
+        # if param not input, set it to one of 1st 2 axes
+        if not self.is_axis_name(param):
+            if xVar  != self.axisL[0].name:
+                param = self.axisL[0].name
+            else:
+                param = self.axisL[1].name        
+        #print('xVar=%s,  param=%s'%(xVar, param))
+        
+        xAxis = self.get_axis_by_name( xVar )
+        pAxis = self.get_axis_by_name( param )
+        #print( 'xAxis =',xAxis )
+        #print( 'pAxis =',pAxis )
+        changing_paramL = [xVar, param]
+        
+        # prepare fixedD of constant values
+        fixed_paramL = []
+        if fixedD is None:
+            D = {}
+        else:
+            D = fixedD.copy()
+            
+        sL = [] # making title string of fixed values
+        fixedD = {}
+        for a in self.axisL:
+            if a.name not in D:
+                D[a.name] = a.get_middle_value()
+            if a.name not in changing_paramL:
+                fixed_paramL.append( a.name )
+                sL.append( '%s=%g %s'%(a.name, D[a.name], a.units) )
+                fixedD[a.name] = D[a.name]
+        fixed_s = ', '.join(sL)
+        #print( "D=", D,  '   fixedD',fixedD )
+        #print( 'fixed_paramL',fixed_paramL, '   fixed_s',fixed_s )
+        #print( 'changing_paramL',changing_paramL )
+        
+        # .......... get sub-matrix to speed things up ..................
+        
+        SP = self.get_sub_matrix( **fixedD )
+
+        # ================= start making plot ========================
+        if rev_param_order:
+            paramL = reversed( pAxis.valueL )
+        else:
+            paramL = pAxis.valueL
+        
+        
+        pylab.figure()
+        markerD = {} # matplotlib options
+        if marker:
+            markerD['marker'] = '.'
+            markerD['markevery'] = 1 + interp_pts
+        if markersize:
+            markerD['markersize'] = markersize
+        
+        # .... begin iterating over param and xVar
+        for p in paramL:
+            fL = []
+            xL = []
+            for x in xAxis.valueL:
+                D[ xVar ] = x
+                D[ param ] = p
+                
+                if interp_pts:
+                    if x in xAxis.valueL:
+                        f = SP.getByName( **D )
+                    else:
+                        f = SP.interp( order=interp_order, **D)
+                        
+                else:
+                    f = SP.getByName( **D )
+                    
+                if f is not None and ( min_val <= f <= max_val):
+                    fL.append( f )
+                    xL.append( x )
+                    
+            if xL:
+                if interp_pts:
+                    # make a transformed list of x's for interpolation
+                    xtL = [ xAxis.transObj(x) for x in xL]
+                    
+                    # make full xvarL for interpolation
+                    xvarL = xAxis.valueL[:] # make a copy... it will be modified
+                    
+                    f = 1.0/(1.0 + interp_pts)
+                    for i in range( len(xL) - 1 ):
+                        for j in range( interp_pts ):
+                            xvarL.append( xL[i] + f*(j+1) * (xL[i+1] - xL[i]) )
+                    xL = sorted( xvarL )
+                    
+                    fL = [ interp1d( xtL , fL, kind=interp_order, fill_value="extrapolate")\
+                           ( xAxis.transObj(x) ) for x in xL]
+                
+                    
+                
+                
+                # Assume there are some interpolated points... plot twice.
+                if is_semilog:
+                    lastplot = pylab.semilogx(xL, fL,  label='%s=%g'%(param, p), **markerD)
+                    c = lastplot[0].get_color()
+                    pylab.semilogx(xL, fL, linestyle='None', marker='|', color=c)
+                else:
+                    lastplot = pylab.plot(xL, fL, label='%s=%g'%(param, p), **markerD)
+                    c = lastplot[0].get_color()
+                    pylab.plot(xL, fL, linestyle='None', marker='|', color=c)
+
+        pylab.title( '%s: %s'%(self.name, fixed_s) )
+        pylab.legend(loc='best', framealpha=0.3)
+        def axis_label( a ):
+            if a.units:
+                return '%s (%s)'%(a.name, a.units)
+            else:
+                return a.name
+        
+        if show_grid:
+            pylab.grid()
+        pylab.xlabel( axis_label( xAxis ) )
+        pylab.ylabel( self.name )
+        
+        
 
 if __name__=="__main__":
 

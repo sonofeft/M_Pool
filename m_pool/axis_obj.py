@@ -36,9 +36,25 @@ class Axis(object):
     
     def get_valueL(self):
         return self.valueL[:] # return a copy
+        
+    def get_trans_valueL(self):
+        return [ self.transObj(v) for v in self.valueL]
+    
+    def value_in_range(self, val):
+        return val>=self.valueL[0] and val<=self.valueL[-1]
+    
+    def get_middle_value(self):
+        i = int( len(self.valueL) / 2 )
+        return self.valueL[i]
+    
+    def transform_str(self):
+        if self.transform:
+            return str(self.transform)
+        else:
+            return 'NONE'
     
     def __str__(self):
-        sL = ['Axis: %s'%self.name + ' ' + str(self.valueL)]
+        sL = ['Axis: %s'%self.name + ' ' + str(self.valueL) + ' transform:' + self.transform_str() ]
         return '\n'.join(sL)
     
     def __len__(self):

@@ -38,6 +38,9 @@ class AxisPool(object):
         self.axisL.append( axis_obj_dammit(axOrD) )
             
         self.make_supt_objects()
+        
+    def pool_axis_name_list(self):
+        return [a.name for a in self.axisL]
 
     def make_supt_objects(self):
         # use axisD to get an Axis object by name
